@@ -1,43 +1,203 @@
 <!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="utf-8" />
-    <link rel="icon" href="%PUBLIC_URL%/favicon.ico" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <meta name="theme-color" content="#000000" />
-    <meta
-      name="description"
-      content="Web site created using create-react-app"
-    />
-    <link rel="apple-touch-icon" href="%PUBLIC_URL%/logo192.png" />
-    <!--
-      manifest.json provides metadata used when your web app is installed on a
-      user's mobile device or desktop. See https://developers.google.com/web/fundamentals/web-app-manifest/
-    -->
-    <link rel="manifest" href="%PUBLIC_URL%/manifest.json" />
-    <!--
-      Notice the use of %PUBLIC_URL% in the tags above.
-      It will be replaced with the URL of the `public` folder during the build.
-      Only files inside the `public` folder can be referenced from the HTML.
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>NFT Dapp</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body>
+  <div id="root"></div>
+  <script src="https://cdn.jsdelivr.net/npm/react@18.2.0/umd/react.development.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/react-dom@18.2.0/umd/react-dom.development.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@babel/standalone@7.23.6/babel.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/ethers@6.13.2/dist/ethers.umd.min.js"></script>
+  <script type="text/babel">
+    const { useState, useEffect } = React;
 
-      Unlike "/favicon.ico" or "favicon.ico", "%PUBLIC_URL%/favicon.ico" will
-      work correctly both with client-side routing and a non-root public URL.
-      Learn how to configure a non-root public URL by running `npm run build`.
-    -->
-    <title>React App</title>
-  </head>
-  <body>
-    <noscript>You need to enable JavaScript to run this app.</noscript>
-    <div id="root"></div>
-    <!--
-      This HTML file is a template.
-      If you open it directly in the browser, you will see an empty page.
+    // WalletConnect Component
+    function WalletConnect({ setAccount }) {
+      const connectWallet = async () => {
+        if (window.ethereum) {
+          try {
+            const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
+            setAccount(accounts[0]);
+          } catch (error) {
+            console.error("Wallet connection failed:", error);
+            alert("Failed to connect wallet. Please try again.");
+          }
+        } else {
+          alert("Please install MetaMask!");
+        }
+      };
 
-      You can add webfonts, meta tags, or analytics to this file.
-      The build step will place the bundled scripts into the <body> tag.
+      return (
+        <button className="btn btn-primary" onClick={connectWallet}>
+          Connect Wallet
+        </button>
+      );
+    }
 
-      To begin the development, run `npm start` or `yarn start`.
-      To create a production bundle, use `npm run build` or `yarn build`.
-    -->
-  </body>
+    // MintNFT Component
+    function MintNFT({ account, contractAddress, contractABI }) {
+      const [tokenURI, setTokenURI] = useState("");
+      const [minting, setMinting] = useState(false);
+
+      const mint = async () => {
+        if (!account) {
+          alert("Please connect your wallet first!");
+          return;
+        }
+        if (!tokenURI) {
+          alert("Please provide a valid Token URI!");
+          return;
+        }
+
+        setMinting(true);
+        try {
+          const provider = new ethers.BrowserProvider(window.ethereum);
+          const signer = await provider.getSigner();
+          const contract = new ethers.Contract(contractAddress, contractABI, signer);
+          const tx = await contract.mintNFT(account, tokenURI);
+          await tx.wait();
+          alert("NFT Minted Successfully!");
+          setTokenURI("");
+        } catch (error) {
+          console.error("Minting failed:", error);
+          alert("Minting failed. Please try again.");
+        } finally {
+          setMinting(false);
+        }
+      };
+
+      return (
+        <div className="card p-3 mt-3">
+          <h3>Mint a New NFT</h3>
+          <div className="mb-3">
+            <label className="form-label">Token URI (e.g., IPFS link)</label>
+            <input
+              type="text"
+              className="form-control"
+              value={tokenURI}
+              onChange={(e) => setTokenURI(e.target.value)}
+              placeholder="https://ipfs.io/ipfs/..."
+            />
+          </div>
+          <button className="btn btn-success" onClick={mint} disabled={minting}>
+            {minting ? "Minting..." : "Mint NFT"}
+          </button>
+        </div>
+      );
+    }
+
+    // NFTGallery Component
+    function NFTGallery({ account, contractAddress, contractABI }) {
+      const [nfts, setNfts] = useState([]);
+
+      useEffect(() => {
+        const fetchNFTs = async () => {
+          if (!account) return;
+          try {
+            const provider = new ethers.BrowserProvider(window.ethereum);
+            const contract = new ethers.Contract(contractAddress, contractABI, provider);
+            const balance = await contract.balanceOf(account);
+            const tokenIds = [];
+            for (let i = 0; i < balance; i++) {
+              const tokenId = await contract.tokenOfOwnerByIndex(account, i);
+              const tokenURI = await contract.tokenURI(tokenId);
+              tokenIds.push({ id: tokenId.toString(), uri: tokenURI });
+            }
+            setNfts(tokenIds);
+          } catch (error) {
+            console.error("Fetching NFTs failed:", error);
+          }
+        };
+        fetchNFTs();
+      }, [account, contractAddress, contractABI]);
+
+      return (
+        <div className="card p-3 mt-3">
+          <h3>Your NFTs</h3>
+          {nfts.length === 0 ? (
+            <p>No NFTs found.</p>
+          ) : (
+            <div className="row">
+              {nfts.map((nft) => (
+                <div key={nft.id} className="col-md-4 mb-3">
+                  <div className="card">
+                    <div className="card-body">
+                      <h5 className="card-title">NFT #{nft.id}</h5>
+                      <p className="card-text">URI: {nft.uri}</p>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      );
+    }
+
+    // Main App Component
+    function App() {
+      const [account, setAccount] = useState(null);
+      const contractAddress = "YOUR_CONTRACT_ADDRESS"; // Replace with your deployed contract address
+      const contractABI = [ // Replace with your contract's ABI
+        {
+          "inputs": [
+            { "internalType": "address", "name": "recipient", "type": "address" },
+            { "internalType": "string", "name": "tokenURI", "type": "string" }
+          ],
+          "name": "mintNFT",
+          "outputs": [{ "internalType": "uint256", "name": "", "type": "uint256" }],
+          "stateMutability": "nonpayable",
+          "type": "function"
+        },
+        {
+          "inputs": [{ "internalType": "address", "name": "owner", "type": "address" }],
+          "name": "balanceOf",
+          "outputs": [{ "internalType": "uint256", "name": "", "type": "uint256" }],
+          "stateMutability": "view",
+          "type": "function"
+        },
+        {
+          "inputs": [
+            { "internalType": "address", "name": "owner", "type": "address" },
+            { "internalType": "uint256", "name": "index", "type": "uint256" }
+          ],
+          "name": "tokenOfOwnerByIndex",
+          "outputs": [{ "internalType": "uint256", "name": "", "type": "uint256" }],
+          "stateMutability": "view",
+          "type": "function"
+        },
+        {
+          "inputs": [{ "internalType": "uint256", "name": "tokenId", "type": "uint256" }],
+          "name": "tokenURI",
+          "outputs": [{ "internalType": "string", "name": "", "type": "string" }],
+          "stateMutability": "view",
+          "type": "function"
+        }
+      ];
+
+      return (
+        <div className="container mt-5">
+          <h1 className="text-center">NFT Dapp</h1>
+          <div className="text-center mb-4">
+            <WalletConnect setAccount={setAccount} />
+            {account && <p className="mt-2">Connected: {account}</p>}
+          </div>
+          {account && (
+            <>
+              <MintNFT account={account} contractAddress={contractAddress} contractABI={contractABI} />
+              <NFTGallery account={account} contractAddress={contractAddress} contractABI={contractABI} />
+            </>
+          )}
+        </div>
+      );
+    }
+
+    // Render the app
+    ReactDOM.render(<App />, document.getElementById('root'));
+  </script>
+</body>
 </html>
