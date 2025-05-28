@@ -41,7 +41,8 @@ function App() {
         const reservedTokens = await contractInstance.reservedTokens();
         const tokenMinted = await contractInstance.tokenMinted();
         const owner = await contractInstance.owner();
-        const publicPrice = await contractInstance.pricePublic();
+        const publicPriceRaw = await contractInstance.pricePublic();
+        const publicPrice = ethers.formatEther(publicPriceRaw);
 
         setContractInfo({
           name,
@@ -51,7 +52,7 @@ function App() {
           publicMintActive,
           reservedTokens: reservedTokens.toString(),
           tokenMinted: tokenMinted.toString(),
-          publicPrice: publicPrice.toString(),
+          publicPrice: publicPrice,
           owner,
         });
       } catch (error) {
@@ -82,8 +83,8 @@ function App() {
             <p><strong>Max Per Tx:</strong> {contractInfo.maxPerTx}</p>
             <p><strong>Public Mint Active:</strong> {contractInfo.publicMintActive.toString()}</p>
             <p><strong>Reserved Tokens:</strong> {contractInfo.reservedTokens}</p>
-            <p><strong>Tokens Minted:</strong> {contractInfo.tokenMinted}</p>
-            <p><strong>Token Price:</strong> {contractInfo.publicPrice}</p>
+            <p><strong>Fish Minted:</strong> {contractInfo.tokenMinted}</p>
+            <p><strong>Fish Price:</strong> {contractInfo.publicPrice}</p>
             <p><strong>Owner:</strong> {contractInfo.owner}</p>
           </div>
 
@@ -103,8 +104,8 @@ function App() {
 
             {mintTxDetails ? (
               <>
-                <p><strong>Token ID:</strong> {mintTxDetails.tokenId}</p>
-                <p><strong>Owner:</strong> {mintTxDetails.owner}</p>
+                <p><strong>Fish ID:</strong> {mintTxDetails.tokenId}</p>
+                <p><strong>Fish Owner:</strong> {mintTxDetails.owner}</p>
                 <p><strong>Gas Used:</strong> {mintTxDetails.gasUsed}</p>
                 <p><strong>From:</strong> {mintTxDetails.txDetails.from}</p>
                 <p><strong>To:</strong> {mintTxDetails.txDetails.to}</p>

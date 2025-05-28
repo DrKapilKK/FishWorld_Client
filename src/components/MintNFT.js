@@ -64,9 +64,9 @@ function MintNFT({ account, contract, contractInfo, contractABI,setMintTxDetails
     try {
       const signer = await new ethers.BrowserProvider(window.ethereum).getSigner();
       const contractWithSigner = contract.connect(signer);
-      const tx = await contractWithSigner.ownerMint(qty, toAddress);
-      const receipt = await tx.wait();
-      const txDetails = await fetchTxDetails(tx.hash, contract);
+      const tx = await contractWithSigner.ownerMint(toAddress, qty);
+      const receipt = await tx.wait(5);
+      const txDetails = await fetchTxDetails(tx.hash, contract,contractABI,setMintTxDetails);
       alert(`NFT(s) Minted! Token ID: ${txDetails.tokenId}`);
     } catch (error) {
       console.error("Owner minting failed:", error);
@@ -95,8 +95,9 @@ function MintNFT({ account, contract, contractInfo, contractABI,setMintTxDetails
       const signer = await new ethers.BrowserProvider(window.ethereum).getSigner();
       const contractWithSigner = contract.connect(signer);
       const newPriceInWei = ethers.parseEther(newPrice);
-      const tx = await contractWithSigner.setPricePublic(newPriceInWei, { gasLimit: 100000 });
-      await tx.wait();
+      // console.log("new price is :",newPriceInWei);
+      const tx = await contractWithSigner.setPricePublic(newPriceInWei);
+      await tx.wait(5);
       alert("Public mint price updated successfully!");
       setNewPrice('');
     } catch (error) {
@@ -166,29 +167,33 @@ function MintNFT({ account, contract, contractInfo, contractABI,setMintTxDetails
 
   return (
     <div className="card p-3 mt-3">
-      <h3>Mint NFTs</h3>
+      <h3>Mint Fish</h3>
        <img
           src="/betta_fish.png"
           alt="NFT Preview"
           style={{ width: '500px', height: '300px', objectFit: 'cover', margin: '0 auto', display: 'block' }}
         />
-      <div className="mb-3">
-        <label className="form-label">Quantity (Max: {contractInfo.maxPerTx})</label>
-        <input
-          type="number"
-          className="form-control"
-          value={qty}
-          onChange={(e) => setQty(parseInt(e.target.value))}
-          placeholder={`1 to ${contractInfo.maxPerTx}`}
-        />
-      </div>
-      <button
-        className="btn btn-success mb-3"
-        onClick={publicMint}
-        disabled={minting || !contractInfo.publicMintActive}
-      >
-        {minting ? "Minting..." : "Public Mint"}
-      </button>
+      {account && account.toLowerCase() !== contractInfo.owner.toLowerCase() && (
+          <>
+            <div className="mb-3">
+              <label className="form-label">Quantity (Max: {contractInfo.maxPerTx})</label>
+              <input
+                type="number"
+                className="form-control"
+                value={qty}
+                onChange={(e) => setQty(parseInt(e.target.value))}
+                placeholder={`1 to ${contractInfo.maxPerTx}`}
+              />
+            </div>
+            <button
+              className="btn btn-success mb-3"
+              onClick={publicMint}
+              disabled={minting || !contractInfo.publicMintActive}
+            >
+              {minting ? "Minting..." : "Public Mint"}
+            </button>
+          </>
+        )}
       {account && account.toLowerCase() === contractInfo.owner.toLowerCase() && (
         <>
           <div className="mb-3">
@@ -199,6 +204,16 @@ function MintNFT({ account, contract, contractInfo, contractABI,setMintTxDetails
               value={toAddress}
               onChange={(e) => setToAddress(e.target.value)}
               placeholder="0x..."
+            />
+          </div>
+          <div className="mb-3">
+            <label className="form-label">Quantity (Max: {contractInfo.maxPerTx})</label>
+            <input
+              type="number"
+              className="form-control"
+              value={qty}
+              onChange={(e) => setQty(parseInt(e.target.value))}
+              placeholder={`1 to ${contractInfo.maxPerTx}`}
             />
           </div>
           <button
@@ -220,7 +235,7 @@ function MintNFT({ account, contract, contractInfo, contractABI,setMintTxDetails
           </div>
           <button
             className="btn btn-primary"
-            onClick setPricePublic
+            onClick ={setPricePublic}
             disabled={settingPrice}
           >
             {settingPrice ? "Setting Price..." : "Set Public Price"}
