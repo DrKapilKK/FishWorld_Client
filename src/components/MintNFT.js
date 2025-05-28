@@ -2,7 +2,8 @@ import React, { useState } from 'react';
 import { ethers } from 'ethers';
 import { Decimal } from 'decimal.js';
 
-function MintNFT({ account, contract, contractInfo }) {
+
+function MintNFT({ account, contract, contractInfo, contractABI,setMintTxDetails }) {
   const [qty, setQty] = useState(1);
   const [toAddress, setToAddress] = useState('');
   const [newPrice, setNewPrice] = useState('');
@@ -30,7 +31,8 @@ function MintNFT({ account, contract, contractInfo }) {
       const valueInWei =contractInfo.publicPrice * qty;//ethers.parseEther((contractInfo.publicPrice * qty).toString()); // Assuming pricePublic is 0.01 ETH
       const tx = await contractWithSigner.publicMint(qty, { value: valueInWei });
       const receipt = await tx.wait(5);
-      const txDetails = await fetchTxDetails(tx.hash, contract);
+      alert(`NFT minted successfully, click on OK and wait for Tx receipt.`)
+      const txDetails = await fetchTxDetails(tx.hash, contract, contractABI,setMintTxDetails);
       alert(`NFT(s) Minted! Token ID: ${txDetails.tokenId}`);
     } catch (error) {
       console.error("Public minting failed:", error);
@@ -105,14 +107,16 @@ function MintNFT({ account, contract, contractInfo }) {
     }
   };
 
-  const fetchTxDetails = async (txHash, contract) => {
-    const receipt = await contract.provider.getTransactionReceipt(txHash);
+  const fetchTxDetails = async (txHash, contract,contractABI,setMintTxDetails) => {
+    const provider = new ethers.BrowserProvider(window.ethereum);
+    const receipt = await provider.getTransactionReceipt(txHash);
+    console.log("Tx Receipt is:", receipt);
     if (!receipt) {
       console.log("Transaction receipt not found yet.");
       return {};
     }
 
-    const iface = new ethers.Interface(contract.interface);
+    const iface = new ethers.Interface(contractABI);
     let tokenId;
     for (const log of receipt.logs) {
       try {
@@ -125,14 +129,26 @@ function MintNFT({ account, contract, contractInfo }) {
         // Log doesn't match ABI
       }
     }
-
+    console.log("tokenid is : ",tokenId);
     const owner = await contract.ownerOf(tokenId);
-    const tx = await contract.provider.getTransaction(txHash);
+    const tx = await provider.getTransaction(txHash);
     const wei = new Decimal(tx.value.toString());
     const priceInEth = wei.div("1e18").toString();
     const gasPriceInWei = new Decimal(tx.gasPrice.toString());
     const gasPriceInGWei = gasPriceInWei.div("1e9").toString();
-
+    setMintTxDetails({
+      receipt,
+      tokenId,
+      owner,
+      gasUsed: receipt.gasUsed.toString(),
+      txDetails: {
+        from: tx.from,
+        to: tx.to,
+        valueEth: priceInEth,
+        gasPriceGwei: gasPriceInGWei,
+        gasLimit: tx.gasLimit.toString(),
+      },
+    });
     return {
       receipt,
       tokenId,
@@ -151,6 +167,11 @@ function MintNFT({ account, contract, contractInfo }) {
   return (
     <div className="card p-3 mt-3">
       <h3>Mint NFTs</h3>
+       <img
+          src="/betta_fish.png"
+          alt="NFT Preview"
+          style={{ width: '500px', height: '300px', objectFit: 'cover', margin: '0 auto', display: 'block' }}
+        />
       <div className="mb-3">
         <label className="form-label">Quantity (Max: {contractInfo.maxPerTx})</label>
         <input
@@ -206,6 +227,7 @@ function MintNFT({ account, contract, contractInfo }) {
           </button>
         </>
       )}
+      
     </div>
   );
 }

@@ -50,3 +50,26 @@ body {
 .btn-primary:hover, .btn-success:hover {
   transform: translateY(-2px);
 }
+
+.custom-layout {
+  width: 100%;
+  gap: 1rem;
+}
+
+.contract-info-card {
+  flex: 1 1 300px; /* flex-grow, flex-shrink, flex-basis */
+  min-width: 250px;
+  max-width: 400px;
+  background-color: #fff;
+  padding: 20px;
+  border-radius: 10px;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+.mint-gallery-section {
+  flex: 2 1 500px;
+  min-width: 300px;
+  max-width: 800px;
+  padding: 20px;
+}
+
