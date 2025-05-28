@@ -1,21 +1,18 @@
 import React, { useState, useEffect } from 'react';
 import { ethers } from 'ethers';
 
-function NFTGallery({ account, contractAddress, contractABI }) {
+function NFTGallery({ account, contract, contractABI }) {
   const [nfts, setNfts] = useState([]);
 
   useEffect(() => {
     const fetchNFTs = async () => {
-      if (!account) return;
+      if (!account || !contract) return;
       try {
-        const provider = new ethers.BrowserProvider(window.ethereum);
-        const contract = new ethers.Contract(contractAddress, contractABI, provider);
         const balance = await contract.balanceOf(account);
         const tokenIds = [];
         for (let i = 0; i < balance; i++) {
           const tokenId = await contract.tokenOfOwnerByIndex(account, i);
-          const tokenURI = await contract.tokenURI(tokenId);
-          tokenIds.push({ id: tokenId.toString(), uri: tokenURI });
+          tokenIds.push({ id: tokenId.toString() });
         }
         setNfts(tokenIds);
       } catch (error) {
@@ -23,7 +20,7 @@ function NFTGallery({ account, contractAddress, contractABI }) {
       }
     };
     fetchNFTs();
-  }, [account, contractAddress, contractABI]);
+  }, [account, contract]);
 
   return (
     <div className="card p-3 mt-3">
@@ -37,7 +34,6 @@ function NFTGallery({ account, contractAddress, contractABI }) {
               <div className="card">
                 <div className="card-body">
                   <h5 className="card-title">NFT #{nft.id}</h5>
-                  <p className="card-text">URI: {nft.uri}</p>
                 </div>
               </div>
             </div>

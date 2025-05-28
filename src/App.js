@@ -18,9 +18,10 @@ function App() {
     publicMintActive: false,
     reservedTokens: 0,
     tokenMinted: 0,
+    publicPrice: 0,
     owner: '',
   });
-  const contractAddress = "YOUR_CONTRACT_ADDRESS"; 
+  const contractAddress = "YOUR_CONTRACT_ADDRESS";
   const contractABI = abi;
 
   useEffect(() => {
@@ -39,6 +40,7 @@ function App() {
         const reservedTokens = await contractInstance.reservedTokens();
         const tokenMinted = await contractInstance.tokenMinted();
         const owner = await contractInstance.owner();
+        const publicPrice = await contractInstance.pricePublic();
 
         setContractInfo({
           name,
@@ -48,6 +50,7 @@ function App() {
           publicMintActive,
           reservedTokens: reservedTokens.toString(),
           tokenMinted: tokenMinted.toString(),
+          publicPrice: publicPrice.toString(),
           owner,
         });
       } catch (error) {
@@ -70,13 +73,13 @@ function App() {
       {contractInfo.name && (
         <div className="card p-3 mb-3">
           <h3>Contract Info</h3>
-          <p><strong>Name:</strong> {contractInfo.name}</p>
           <p><strong>Max Supply:</strong> {contractInfo.maxSupply}</p>
           <p><strong>Max Per Wallet:</strong> {contractInfo.maxPerWallet}</p>
           <p><strong>Max Per Tx:</strong> {contractInfo.maxPerTx}</p>
           <p><strong>Public Mint Active:</strong> {contractInfo.publicMintActive.toString()}</p>
           <p><strong>Reserved Tokens:</strong> {contractInfo.reservedTokens}</p>
           <p><strong>Tokens Minted:</strong> {contractInfo.tokenMinted}</p>
+          <p><strong>Token Price:</strong> {contractInfo.publicPrice}</p>
           <p><strong>Owner:</strong> {contractInfo.owner}</p>
         </div>
       )}
